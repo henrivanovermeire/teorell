@@ -1,12 +1,10 @@
 # teorell
 
+![teorell](assets/teorell.png)
+
 FOSS core for pharmacokinetic modelling in anesthesiology & critical care.
 
 Inspired by educational tools such as the [Brigham Anesthesia Simulator](https://apps.apple.com/us/app/brigham-anesthesia-simulator/id1406519095) (BAS): multi-drug IV PK, opioid equipotency, and a Bouillon-style predicted processed-EEG (BIS) surface.
-
-
-
-
 
 ## Status
 
