@@ -44,6 +44,10 @@ Wiki sources (synced to GitHub Wiki): [`docs/wiki/`](docs/wiki/).
 
 ## Quick start
 
+### Web application
+
+#### Running from bash script (Linux)
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -55,6 +59,32 @@ pytest
 ```
 
 Open [http://localhost:5173](http://localhost:5173) — edit patient on the landing page → Start simulation.
+
+#### Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:8080](http://localhost:8080) (API health: [http://localhost:8000/health](http://localhost:8000/health)).  
+Backend image embeds `teorell_core`; frontend is a static Vite build behind nginx with `/ws` proxy. See `docker/` and `compose.yaml`.
+
+### Live app (FastAPI WebSocket + Vite React)
+
+`./scripts/run-live.sh` starts FastAPI (WebSocket on `:8000`) and the Vite React UI (`:5173`) together. Requires Node/npm once; the script runs `npm install` in `src/web/frontend` if needed. Override ports with `API_PORT` / `WEB_PORT`.
+
+Manual two-terminal setup:
+
+```bash
+# terminal 1 — API
+PYTHONPATH=src uvicorn web.backend.main:app --reload --port 8000
+
+# terminal 2 — UI
+cd src/web/frontend && npm install && npm run dev
+```
+
+
+### Scripted simulation
 
 ```python
 from teorell_core import (
@@ -82,32 +112,6 @@ anes = simulate_anesthesia(
 )
 print(anes.bis.min(), anes.mac_fraction.max(), anes.vrg_vol_pct[-1])
 ```
-
-
-
-### Docker Compose
-
-```bash
-docker compose up --build
-```
-
-Open [http://localhost:8080](http://localhost:8080) (API health: [http://localhost:8000/health](http://localhost:8000/health)).  
-Backend image embeds `teorell_core`; frontend is a static Vite build behind nginx with `/ws` proxy. See `docker/` and `compose.yaml`.
-
-### Live app (FastAPI WebSocket + Vite React)
-
-`./scripts/run-live.sh` starts FastAPI (WebSocket on `:8000`) and the Vite React UI (`:5173`) together. Requires Node/npm once; the script runs `npm install` in `src/web/frontend` if needed. Override ports with `API_PORT` / `WEB_PORT`.
-
-Manual two-terminal setup:
-
-```bash
-# terminal 1 — API
-PYTHONPATH=src uvicorn web.backend.main:app --reload --port 8000
-
-# terminal 2 — UI
-cd src/web/frontend && npm install && npm run dev
-```
-
 
 
 ### Examples
