@@ -25,9 +25,9 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ ! -d "$ROOT/apps/web/node_modules" ]]; then
+if [[ ! -d "$ROOT/src/web/frontend/node_modules" ]]; then
   echo "Installing web dependencies…"
-  (cd "$ROOT/apps/web" && npm install)
+  (cd "$ROOT/src/web/frontend" && npm install)
 fi
 
 API_PID=""
@@ -51,12 +51,12 @@ echo "UI   → http://localhost:${WEB_PORT}"
 echo "Ctrl+C stops both."
 echo
 
-export PYTHONPATH="${ROOT}/src:${ROOT}${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="${ROOT}/src${PYTHONPATH:+:$PYTHONPATH}"
 
-"$UVICORN" apps.api.main:app --reload --host 127.0.0.1 --port "$API_PORT" &
+"$UVICORN" web.backend.main:app --reload --host 127.0.0.1 --port "$API_PORT" &
 API_PID=$!
 
-(cd "$ROOT/apps/web" && npm run dev -- --port "$WEB_PORT") &
+(cd "$ROOT/src/web/frontend" && npm run dev -- --port "$WEB_PORT") &
 WEB_PID=$!
 
 # If either child exits, shut down the other.

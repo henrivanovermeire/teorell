@@ -16,7 +16,7 @@ Inspired by educational tools such as the [Brigham Anesthesia Simulator](https:/
 | Predicted BIS | Bouillon + Schumacher | IV opioids + propofol/sevoflurane hypnotic U |
 | Opioid equipotency | Alfentanil → remi | ÷40 (Egan 1999 whole-blood ratio) |
 | Effect-site TCI | No | Manual bolus/infusion / vaporizer schedules only |
-| Live WebSocket UI | Yes | `LiveSession` + FastAPI `/ws` + Vite React (`apps/`) |
+| Live WebSocket UI | Yes | `LiveSession` + FastAPI `/ws` + Vite React (`src/web/`) |
 | NMB / local anesthetics | No | Catalogued below; not simulated yet |
 
 Phased plan for further volatiles and drugs: [ROADMAP.md](ROADMAP.md).
@@ -62,16 +62,16 @@ print(anes.bis.min(), anes.mac_fraction.max(), anes.vrg_vol_pct[-1])
 
 ### Live app (FastAPI WebSocket + Vite React)
 
-`./scripts/run-live.sh` starts FastAPI (WebSocket on `:8000`) and the Vite React UI (`:5173`) together. Requires Node/npm once; the script runs `npm install` in `apps/web` if needed. Override ports with `API_PORT` / `WEB_PORT`.
+`./scripts/run-live.sh` starts FastAPI (WebSocket on `:8000`) and the Vite React UI (`:5173`) together. Requires Node/npm once; the script runs `npm install` in `src/web/frontend` if needed. Override ports with `API_PORT` / `WEB_PORT`.
 
 Manual two-terminal setup:
 
 ```bash
 # terminal 1 — API
-PYTHONPATH=src:. uvicorn apps.api.main:app --reload --port 8000
+PYTHONPATH=src uvicorn web.backend.main:app --reload --port 8000
 
 # terminal 2 — UI
-cd apps/web && npm install && npm run dev
+cd src/web/frontend && npm install && npm run dev
 ```
 
 ### Examples
@@ -138,19 +138,20 @@ BIS = E0 − Emax · U^γ / (1 + U^γ)
 ## Package layout
 
 ```text
-src/teorell_core/
-  patient.py, dosing.py, parameters.py, simulator.py
-  pd.py              # Bouillon + Schumacher + CombinedBIS
-  tiva.py            # simulate_tiva(...)
-  anesthesia.py      # simulate_anesthesia(...) dual core
-  live.py            # LiveSession stepper (real-time boluses)
-  models/            # schnider / minto / scott
-  volatile/
-    properties.py    # λ, MAC (sevo, iso, des, halo)
-    gasman.py        # simulate_volatile(...)
-apps/
-  api/main.py        # FastAPI WebSocket server
-  web/               # Vite React live UI
+src/
+  teorell_core/        # PK/PD library
+    patient.py, dosing.py, parameters.py, simulator.py
+    pd.py              # Bouillon + Schumacher + CombinedBIS
+    tiva.py            # simulate_tiva(...)
+    anesthesia.py      # simulate_anesthesia(...) dual core
+    live.py            # LiveSession stepper (real-time boluses)
+    models/            # schnider / minto / scott
+    volatile/
+      properties.py    # λ, MAC (sevo, iso, des, halo)
+      gasman.py        # simulate_volatile(...)
+  web/                 # live teaching UI stack
+    backend/main.py    # FastAPI WebSocket server
+    frontend/          # Vite React UI
 ```
 
 ## Planned infusion models

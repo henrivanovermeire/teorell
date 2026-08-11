@@ -145,8 +145,8 @@ Goal: `docker compose up` → FastAPI WebSocket API + Vite UI, same teaching wor
 
 | Step | Deliverable |
 |------|-------------|
-| 1 | **API image** — Python ≥3.11, `teorell-core[live]`, `uvicorn apps.api.main:app` on `:8000` |
-| 2 | **Web image** — multi-stage: `npm run build` → nginx (or similar) serving `apps/web/dist`, proxy `/ws` + `/health` to API |
+| 1 | **API image** — Python ≥3.11, `teorell-core[live]`, `uvicorn web.backend.main:app` on `:8000` |
+| 2 | **Web image** — multi-stage: `npm run build` → nginx (or similar) serving `src/web/frontend/dist`, proxy `/ws` + `/health` to API |
 | 3 | **`compose.yaml`** — `api` + `web` services, published ports (e.g. UI `:5173` or `:80`, API internal) |
 | 4 | **Dev override** — optional `compose.dev.yaml` with volume mounts + hot reload for contributors |
 | 5 | **Docs** — README “Run with Docker”; `.dockerignore` for `node_modules` / `.venv` / `examples/*.png` |
@@ -197,7 +197,7 @@ Docker Compose belongs in Phase 0 (demo friction). TCI and the model registry ca
 2. Wire into `simulate_tiva` / `simulate_anesthesia` / `LiveSession` with **explicit units**.
 3. Cite PMID in README catalog; mark the row bold when coded.
 4. Add pytest golden-path + one `examples/*.py` plot.
-5. Expose controls in `apps/api` + `apps/web` only after core tests pass.
+5. Expose controls in `src/web/backend` + `src/web/frontend` only after core tests pass.
 6. Update this roadmap checkboxes when a phase item ships.
 
 References and the full planned catalog remain in [README.md](README.md).

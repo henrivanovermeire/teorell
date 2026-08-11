@@ -5,10 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Avoid ENOSPC when fs.inotify.max_user_watches is exhausted (common on Linux).
     watch: {
-      usePolling: true,
-      interval: 1000,
+      usePolling: false,
     },
     proxy: {
       "/ws": {

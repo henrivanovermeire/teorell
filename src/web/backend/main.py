@@ -61,6 +61,8 @@ async def live_ws(ws: WebSocket) -> None:
     sim_min_per_wall_s = 1.0
     wall_tick_s = 0.1
     tick_task: asyncio.Task[None] | None = None
+    # Serialize mutations: ticker to_thread vs bolus/reset on the same session.
+    session_lock = asyncio.Lock()
 
     async def send(payload: dict[str, Any]) -> None:
         await ws.send_text(json.dumps(payload))
@@ -73,11 +75,15 @@ async def live_ws(ws: WebSocket) -> None:
         try:
             while True:
                 await asyncio.sleep(wall_tick_s)
-                if not playing or session is None:
-                    continue
-                dt = sim_min_per_wall_s * wall_tick_s
-                snap = session.step(dt)
-                await emit_tick(snap.as_dict())
+                snap_dict: dict[str, float] | None = None
+                async with session_lock:
+                    if not playing or session is None:
+                        continue
+                    dt = sim_min_per_wall_s * wall_tick_s
+                    snap = await asyncio.to_thread(session.step, dt)
+                    snap_dict = snap.as_dict()
+                if snap_dict is not None:
+                    await emit_tick(snap_dict)
         except asyncio.CancelledError:
             return
 
@@ -100,16 +106,26 @@ async def live_ws(ws: WebSocket) -> None:
             if mtype == "start":
                 playing = False
                 agent = AGENTS.get(str(msg.get("agent", "sevoflurane")).lower(), SEVOFLURANE)
-                session = LiveSession(patient=_patient_from(msg), volatile_agent=agent)
-                session.volatile_enabled = bool(msg.get("volatile_enabled", True))
-                sim_min_per_wall_s = float(msg.get("speed", 1.0))
-                if sim_min_per_wall_s <= 0:
-                    sim_min_per_wall_s = 1.0
+                patient = _patient_from(msg)
+                volatile_enabled = bool(msg.get("volatile_enabled", True))
+                speed = float(msg.get("speed", 1.0))
+                if speed <= 0:
+                    speed = 1.0
+
+                def _new_session() -> LiveSession:
+                    s = LiveSession(patient=patient, volatile_agent=agent)
+                    s.volatile_enabled = volatile_enabled
+                    return s
+
+                async with session_lock:
+                    session = await asyncio.to_thread(_new_session)
+                    snap = await asyncio.to_thread(session.snapshot)
+                sim_min_per_wall_s = speed
                 ensure_ticker()
                 await send(
                     {
                         "type": "started",
-                        "snapshot": session.snapshot().as_dict(),
+                        "snapshot": snap.as_dict(),
                         "speed": sim_min_per_wall_s,
                     }
                 )
@@ -136,15 +152,16 @@ async def live_ws(ws: WebSocket) -> None:
                     continue
                 drug = str(msg.get("drug", "")).lower()
                 amount = float(msg.get("amount", 0))
-                if drug == "propofol":
-                    snap = session.bolus_propofol(amount)
-                elif drug == "remifentanil":
-                    snap = session.bolus_remifentanil(amount)
-                elif drug == "alfentanil":
-                    snap = session.bolus_alfentanil(amount)
-                else:
-                    await send({"type": "error", "message": f"unknown drug {drug}"})
-                    continue
+                async with session_lock:
+                    if drug == "propofol":
+                        snap = await asyncio.to_thread(session.bolus_propofol, amount)
+                    elif drug == "remifentanil":
+                        snap = await asyncio.to_thread(session.bolus_remifentanil, amount)
+                    elif drug == "alfentanil":
+                        snap = await asyncio.to_thread(session.bolus_alfentanil, amount)
+                    else:
+                        await send({"type": "error", "message": f"unknown drug {drug}"})
+                        continue
                 await emit_tick(snap.as_dict(), event="bolus")
 
             elif mtype == "set_infusion":
@@ -153,16 +170,18 @@ async def live_ws(ws: WebSocket) -> None:
                     continue
                 drug = str(msg.get("drug", "")).lower()
                 rate = float(msg.get("rate", 0))
-                if drug == "propofol":
-                    session.set_propofol_infusion(rate)
-                elif drug == "remifentanil":
-                    session.set_remifentanil_infusion(rate)
-                elif drug == "alfentanil":
-                    session.set_alfentanil_infusion(rate)
-                else:
-                    await send({"type": "error", "message": f"unknown drug {drug}"})
-                    continue
-                await emit_tick(session.snapshot().as_dict(), event="infusion")
+                async with session_lock:
+                    if drug == "propofol":
+                        session.set_propofol_infusion(rate)
+                    elif drug == "remifentanil":
+                        session.set_remifentanil_infusion(rate)
+                    elif drug == "alfentanil":
+                        session.set_alfentanil_infusion(rate)
+                    else:
+                        await send({"type": "error", "message": f"unknown drug {drug}"})
+                        continue
+                    snap = await asyncio.to_thread(session.snapshot)
+                await emit_tick(snap.as_dict(), event="infusion")
 
             elif mtype == "set_vaporizer":
                 if session is None:
@@ -170,22 +189,27 @@ async def live_ws(ws: WebSocket) -> None:
                     continue
                 vol = float(msg.get("vol_pct", 0))
                 fgf = msg.get("fgf")
-                session.set_vaporizer(vol, float(fgf) if fgf is not None else None)
-                await emit_tick(session.snapshot().as_dict(), event="vaporizer")
+                async with session_lock:
+                    session.set_vaporizer(vol, float(fgf) if fgf is not None else None)
+                    snap = await asyncio.to_thread(session.snapshot)
+                await emit_tick(snap.as_dict(), event="vaporizer")
 
             elif mtype == "reset":
                 if session is None:
                     await send({"type": "error", "message": "start a session first"})
                     continue
                 playing = False
-                snap = session.reset()
+                async with session_lock:
+                    snap = await asyncio.to_thread(session.reset)
                 await emit_tick(snap.as_dict(), event="reset")
 
             elif mtype == "history":
                 if session is None:
                     await send({"type": "error", "message": "start a session first"})
                     continue
-                await send({"type": "history", "points": session.history[-500:]})
+                async with session_lock:
+                    points = list(session.history[-500:])
+                await send({"type": "history", "points": points})
 
             else:
                 await send({"type": "error", "message": f"unknown type {mtype}"})

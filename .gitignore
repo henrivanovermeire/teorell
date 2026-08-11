@@ -222,4 +222,4 @@ examples/*.png
 
 # Node / Vite
 node_modules/
-apps/web/dist/
+src/web/frontend/dist/
