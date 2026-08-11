@@ -36,7 +36,7 @@ pip install teorell-core
 
 Educational use only — not a medical device and not for clinical dosing.
 
-Release / Trusted Publishing setup: [docs/publishing.md](docs/publishing.md).
+Release flow (TestPyPI first, then production): [docs/publishing.md](docs/publishing.md).
 
 ## Quick start
 
