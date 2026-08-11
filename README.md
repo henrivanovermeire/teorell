@@ -4,11 +4,9 @@
 
 FOSS core for pharmacokinetic modelling in anesthesiology & critical care.
 
-Independent educational project: multi-drug IV PK, opioid equipotency, volatile
-Gas Man–style uptake, and Bouillon/Schumacher-style predicted processed-EEG
-(BIS) surfaces. **Not affiliated with** Brigham and Women’s Hospital or any
-commercial anesthesia simulator. **Not a medical device** — not for clinical
-dosing or patient care.
+Educational multi-drug IV PK, opioid equipotency, volatile Gas Man–style uptake,
+and Bouillon/Schumacher-style predicted processed-EEG (BIS) surfaces.
+**Not a medical device** — not for clinical dosing or patient care.
 
 ## Status
 
@@ -261,6 +259,14 @@ Catalog of PK references to implement (only **bold** rows are coded today):
 
 
 
+
+## Acknowledgments
+
+Thank you to **Christopher Connor** for his pioneering work on the
+[Brigham Anesthesia Simulator](https://apps.apple.com/us/app/brigham-anesthesia-simulator/id1406519095)
+and pharmacokinetic modelling, and for his contributions to open-source tools
+across the anesthesiology and critical care ecosystem. That body of work was a
+direct inspiration for this project.
 
 ## License
 

@@ -2,12 +2,13 @@
 
 # teorell wiki
 
-**Educational** pharmacokinetic / pharmacodynamic simulation for anesthesiology and critical care. Independent FOSS project — **not affiliated with** Brigham and Women’s Hospital or commercial simulators; **not a medical device** and **not for clinical dosing**.
+**Educational** pharmacokinetic / pharmacodynamic simulation for anesthesiology and critical care — **not a medical device** and **not for clinical dosing**.
 
 ## Contents
 
 - [[Getting-Started]] — install the core library, run the live UI, Docker
 - [[Architecture]] — package layout, dual-core PK/PD, WebSocket live stack
+- [[Acknowledgments]] — thanks and inspiration
 
 ## Quick links
 
