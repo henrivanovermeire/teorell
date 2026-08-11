@@ -28,7 +28,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,live]"
 pytest
+./scripts/run-live.sh   # API :8000 + UI :5173
 ```
+
+Open http://localhost:5173 — Start session → Play → bolus buttons.
 
 ```python
 from teorell_core import (
@@ -59,18 +62,17 @@ print(anes.bis.min(), anes.mac_fraction.max(), anes.vrg_vol_pct[-1])
 
 ### Live app (FastAPI WebSocket + Vite React)
 
-Real-time session with on-the-fly boluses / infusions / vaporizer:
+`./scripts/run-live.sh` starts FastAPI (WebSocket on `:8000`) and the Vite React UI (`:5173`) together. Requires Node/npm once; the script runs `npm install` in `apps/web` if needed. Override ports with `API_PORT` / `WEB_PORT`.
+
+Manual two-terminal setup:
 
 ```bash
 # terminal 1 — API
-pip install -e ".[dev,live]"
 PYTHONPATH=src:. uvicorn apps.api.main:app --reload --port 8000
 
 # terminal 2 — UI
 cd apps/web && npm install && npm run dev
 ```
-
-Open http://localhost:5173 — Start session → Play → bolus buttons.
 
 ### Examples
 
