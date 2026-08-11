@@ -225,6 +225,99 @@ button.toggle.on {
   font-size: 0.75rem;
 }
 
+.landing {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, #1a3a55 0%, transparent 55%),
+    var(--bg);
+}
+
+.landing-card {
+  width: min(420px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.landing-brand {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.landing-card h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.landing-lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.landing-cta {
+  margin-top: 0.35rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+}
+
+.landing-cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.patient-locked {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+}
+
+.patient-locked h2 {
+  margin: 0 0 0.55rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.patient-locked dl {
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.patient-locked dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.patient-locked dt {
+  color: var(--muted);
+}
+
+.patient-locked dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 960px) {
   .app {
     grid-template-columns: 1fr;

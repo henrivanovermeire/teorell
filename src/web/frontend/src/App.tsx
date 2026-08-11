@@ -40,10 +40,15 @@ const emptySnap: Snapshot = {
   fgf: 6,
 };
 
+type Phase = "landing" | "sim";
+
 export default function App() {
   const client = useRef<LiveClient | null>(null);
   const lastChartAt = useRef(0);
   const latestSnap = useRef<Snapshot>(emptySnap);
+  const pendingEnterSim = useRef(false);
+
+  const [phase, setPhase] = useState<Phase>("landing");
   const [connected, setConnected] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [showConcentrations, setShowConcentrations] = useState(true);
@@ -61,9 +66,6 @@ export default function App() {
   const [fgf, setFgf] = useState(6);
   const [status, setStatus] = useState("disconnected");
 
-  const paramsRef = useRef({ age, weight, height, sex, agent, speed });
-  paramsRef.current = { age, weight, height, sex, agent, speed };
-
   const appendChart = useCallback((s: Snapshot) => {
     lastChartAt.current = performance.now();
     setHistory((h) => {
@@ -72,7 +74,6 @@ export default function App() {
     });
   }, []);
 
-  /** Metrics every tick; charts throttled unless force (bolus / reset / …). */
   const onSnapshot = useCallback(
     (s: Snapshot, forceChart = false) => {
       latestSnap.current = s;
@@ -90,17 +91,6 @@ export default function App() {
       (msg) => {
         if (msg.type === "hello") {
           setStatus("connected");
-          const p = paramsRef.current;
-          c.send({
-            type: "start",
-            age: p.age,
-            weight: p.weight,
-            height: p.height,
-            sex: p.sex,
-            agent: p.agent,
-            speed: p.speed,
-            volatile_enabled: true,
-          });
         }
         if (msg.type === "started") {
           lastChartAt.current = 0;
@@ -109,8 +99,11 @@ export default function App() {
           setSnap(msg.snapshot);
           setSpeed(msg.speed);
           setStatus("ready");
-          // Play is the default after every start (including page-load auto-start).
-          c.send({ type: "play" });
+          if (pendingEnterSim.current) {
+            pendingEnterSim.current = false;
+            setPhase("sim");
+            c.send({ type: "play" });
+          }
         }
         if (msg.type === "playing") {
           setPlaying(true);
@@ -148,6 +141,31 @@ export default function App() {
     client.current?.send(msg);
   }, []);
 
+  const startSimulation = useCallback(() => {
+    if (!connected) return;
+    pendingEnterSim.current = true;
+    send({
+      type: "start",
+      age,
+      weight,
+      height,
+      sex,
+      agent,
+      speed,
+      volatile_enabled: true,
+    });
+  }, [connected, send, age, weight, height, sex, agent, speed]);
+
+  const backToLanding = useCallback(() => {
+    send({ type: "pause" });
+    setPlaying(false);
+    setPhase("landing");
+    setHistory([]);
+    setSnap(emptySnap);
+    latestSnap.current = emptySnap;
+    setStatus(connected ? "connected" : "disconnected");
+  }, [send, connected]);
+
   const chartData = useMemo(
     () =>
       history.map((h) => ({
@@ -161,61 +179,132 @@ export default function App() {
     [history],
   );
 
+  const agentLabel =
+    agent.charAt(0).toUpperCase() + agent.slice(1);
+
+  if (phase === "landing") {
+    return (
+      <div className="landing">
+        <div className="landing-card">
+          <p className="landing-brand">teorell</p>
+          <h1>Patient</h1>
+          <p className="landing-lead">
+            Review demographics and volatile agent, then start the live
+            simulation. Educational only — not a medical device.
+          </p>
+          <p className={`status ${connected ? "on" : ""}`}>
+            {connected ? "Ready" : "Connecting…"}
+          </p>
+
+          <div className="field">
+            <label>Age (y)</label>
+            <input
+              type="number"
+              min={18}
+              max={90}
+              value={age}
+              onChange={(e) => setAge(Number(e.target.value))}
+            />
+          </div>
+          <div className="row">
+            <div className="field">
+              <label>Weight (kg)</label>
+              <input
+                type="number"
+                min={40}
+                max={150}
+                value={weight}
+                onChange={(e) => setWeight(Number(e.target.value))}
+              />
+            </div>
+            <div className="field">
+              <label>Height (cm)</label>
+              <input
+                type="number"
+                min={140}
+                max={210}
+                value={height}
+                onChange={(e) => setHeight(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <div className="field">
+            <label>Sex</label>
+            <select
+              value={sex}
+              onChange={(e) => setSex(e.target.value as "male" | "female")}
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Volatile agent</label>
+            <select value={agent} onChange={(e) => setAgent(e.target.value)}>
+              <option value="sevoflurane">Sevoflurane</option>
+              <option value="isoflurane">Isoflurane</option>
+              <option value="desflurane">Desflurane</option>
+              <option value="halothane">Halothane</option>
+            </select>
+          </div>
+          <div className="field">
+            <label>Speed (sim min / wall s)</label>
+            <input
+              type="number"
+              min={0.1}
+              step={0.1}
+              value={speed}
+              onChange={(e) => setSpeed(Number(e.target.value))}
+            />
+          </div>
+
+          <button
+            className="primary landing-cta"
+            disabled={!connected}
+            onClick={startSimulation}
+          >
+            Start simulation
+          </button>
+          <p className="disclaimer">
+            Schnider · Minto · Scott · Gas Man · Bouillon/Schumacher BIS
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
         <h1>teorell live</h1>
-        <p>
-          Real-time PK/PD over WebSocket. Educational only — not a medical
-          device.
-        </p>
         <p className={`status ${connected ? "on" : ""}`}>{status}</p>
 
-        <div className="field">
-          <label>Age</label>
-          <input
-            type="number"
-            value={age}
-            onChange={(e) => setAge(Number(e.target.value))}
-          />
+        <div className="patient-locked">
+          <h2>Patient</h2>
+          <dl>
+            <div>
+              <dt>Age</dt>
+              <dd>{age} y</dd>
+            </div>
+            <div>
+              <dt>Weight</dt>
+              <dd>{weight} kg</dd>
+            </div>
+            <div>
+              <dt>Height</dt>
+              <dd>{height} cm</dd>
+            </div>
+            <div>
+              <dt>Sex</dt>
+              <dd>{sex === "male" ? "Male" : "Female"}</dd>
+            </div>
+            <div>
+              <dt>Volatile</dt>
+              <dd>{agentLabel}</dd>
+            </div>
+          </dl>
         </div>
-        <div className="row">
-          <div className="field">
-            <label>Weight kg</label>
-            <input
-              type="number"
-              value={weight}
-              onChange={(e) => setWeight(Number(e.target.value))}
-            />
-          </div>
-          <div className="field">
-            <label>Height cm</label>
-            <input
-              type="number"
-              value={height}
-              onChange={(e) => setHeight(Number(e.target.value))}
-            />
-          </div>
-        </div>
-        <div className="field">
-          <label>Sex</label>
-          <select
-            value={sex}
-            onChange={(e) => setSex(e.target.value as "male" | "female")}
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-        </div>
-        <div className="field">
-          <label>Volatile</label>
-          <select value={agent} onChange={(e) => setAgent(e.target.value)}>
-            <option value="sevoflurane">Sevoflurane</option>
-            <option value="isoflurane">Isoflurane</option>
-            <option value="desflurane">Desflurane</option>
-            <option value="halothane">Halothane</option>
-          </select>
-        </div>
+
         <div className="field">
           <label>Speed (sim min / wall s)</label>
           <input
@@ -231,23 +320,6 @@ export default function App() {
           />
         </div>
 
-        <button
-          className="primary"
-          onClick={() =>
-            send({
-              type: "start",
-              age,
-              weight,
-              height,
-              sex,
-              agent,
-              speed,
-              volatile_enabled: true,
-            })
-          }
-        >
-          Start session
-        </button>
         <div className="row">
           <button onClick={() => send({ type: "play" })}>Play</button>
           <button onClick={() => send({ type: "pause" })}>Pause</button>
@@ -255,8 +327,11 @@ export default function App() {
             Reset
           </button>
         </div>
+        <button type="button" onClick={backToLanding}>
+          New patient
+        </button>
         <p className="disclaimer">
-          Schnider · Minto · Scott · Gas Man · Bouillon/Schumacher BIS
+          Demographics locked for this case. Use New patient to change them.
         </p>
       </aside>
 
