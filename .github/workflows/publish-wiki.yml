@@ -1,0 +1,45 @@
+name: Publish Wiki
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "docs/wiki/**"
+      - ".github/workflows/publish-wiki.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync docs/wiki → GitHub Wiki
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          WIKI_URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.wiki.git"
+          rm -rf .wiki-tmp
+          if ! git clone --depth 1 "$WIKI_URL" .wiki-tmp 2>/tmp/wiki-clone.err; then
+            echo "::error::Could not clone the wiki repo."
+            echo "Enable Wiki under Settings → General → Features, then create a blank Home page once in the GitHub Wiki UI so ${{ github.repository }}.wiki.git exists."
+            cat /tmp/wiki-clone.err || true
+            exit 1
+          fi
+          # Replace wiki content with docs/wiki (keep .git)
+          find .wiki-tmp -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a docs/wiki/. .wiki-tmp/
+          cd .wiki-tmp
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "Wiki already up to date."
+            exit 0
+          fi
+          git commit -m "Sync wiki from docs/wiki (${GITHUB_SHA::7})"
+          git push

@@ -38,6 +38,8 @@ Educational use only — not a medical device and not for clinical dosing.
 
 Release flow (TestPyPI first, then production): [docs/publishing.md](docs/publishing.md).
 
+Wiki sources (synced to GitHub Wiki): [`docs/wiki/`](docs/wiki/).
+
 ## Quick start
 
 ```bash
