@@ -26,9 +26,8 @@ Phased plan for further volatiles and drugs: [ROADMAP.md](ROADMAP.md).
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev,app]"
+pip install -e ".[dev,live]"
 pytest
-streamlit run app/streamlit_app.py
 ```
 
 ```python
@@ -72,8 +71,6 @@ cd apps/web && npm install && npm run dev
 ```
 
 Open http://localhost:5173 — Start session → Play → bolus buttons.
-
-Streamlit planner MVP remains at `app/streamlit_app.py` (`pip install -e ".[app]"`).
 
 ### Examples
 
