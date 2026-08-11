@@ -114,8 +114,8 @@ cd src/web/frontend && npm install && npm run dev
 python examples/schnider_bolus.py
 python examples/schnider_bolus_infusion.py
 python examples/schnider_multi_bolus_high_infusion.py
-python examples/brigham_style_tiva_bis.py
-python examples/brigham_style_propofol_alfentanil_bis.py
+python examples/tiva_propofol_remifentanil_bis.py
+python examples/tiva_propofol_alfentanil_bis.py
 python examples/sevoflurane_gasman_bis.py
 ```
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""BAS-style sevoflurane Gas Man PK + Schumacher/Bouillon predicted BIS."""
+"""Sevoflurane Gas Man PK + Schumacher/Bouillon predicted BIS."""
 
 from __future__ import annotations
 

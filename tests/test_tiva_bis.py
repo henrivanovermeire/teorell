@@ -1,4 +1,4 @@
-"""Tests for Bouillon BIS PD and Brigham-style TIVA simulation."""
+"""Tests for Bouillon BIS PD and TIVA simulation."""
 
 from __future__ import annotations
 

@@ -112,7 +112,7 @@ From a source checkout (plots write PNGs under `examples/`, gitignored):
 
 ```bash
 python examples/schnider_bolus.py
-python examples/brigham_style_tiva_bis.py
+python examples/tiva_propofol_remifentanil_bis.py
 python examples/sevoflurane_gasman_bis.py
 ```
 
