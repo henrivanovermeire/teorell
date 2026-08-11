@@ -11,10 +11,15 @@ import {
 } from "recharts";
 import { connectLive, type LiveClient, type Snapshot } from "./live";
 
-const MAX_POINTS = 600;
+const MAX_POINTS = 180;
 /** Chart redraw rate; metric tiles still update every WS tick. */
 const CHART_HZ = 4;
 const CHART_MIN_MS = 1000 / CHART_HZ;
+
+const tooltipStyle = {
+  background: "#1a222c",
+  border: "1px solid #2c3848",
+} as const;
 
 const emptySnap: Snapshot = {
   t_min: 0,
@@ -41,6 +46,7 @@ export default function App() {
   const latestSnap = useRef<Snapshot>(emptySnap);
   const [connected, setConnected] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [showConcentrations, setShowConcentrations] = useState(true);
   const [snap, setSnap] = useState<Snapshot>(emptySnap);
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [speed, setSpeed] = useState(1);
@@ -54,6 +60,9 @@ export default function App() {
   const [vap, setVap] = useState(0);
   const [fgf, setFgf] = useState(6);
   const [status, setStatus] = useState("disconnected");
+
+  const paramsRef = useRef({ age, weight, height, sex, agent, speed });
+  paramsRef.current = { age, weight, height, sex, agent, speed };
 
   const appendChart = useCallback((s: Snapshot) => {
     lastChartAt.current = performance.now();
@@ -79,15 +88,29 @@ export default function App() {
   useEffect(() => {
     const c = connectLive(
       (msg) => {
-        if (msg.type === "hello") setStatus("connected");
+        if (msg.type === "hello") {
+          setStatus("connected");
+          const p = paramsRef.current;
+          c.send({
+            type: "start",
+            age: p.age,
+            weight: p.weight,
+            height: p.height,
+            sex: p.sex,
+            agent: p.agent,
+            speed: p.speed,
+            volatile_enabled: true,
+          });
+        }
         if (msg.type === "started") {
-          setPlaying(false);
           lastChartAt.current = 0;
           latestSnap.current = msg.snapshot;
           setHistory([msg.snapshot]);
           setSnap(msg.snapshot);
           setSpeed(msg.speed);
           setStatus("ready");
+          // Play is the default after every start (including page-load auto-start).
+          c.send({ type: "play" });
         }
         if (msg.type === "playing") {
           setPlaying(true);
@@ -375,74 +398,80 @@ export default function App() {
         </div>
 
         <div className="chart-panel">
-          <h2>Predicted BIS</h2>
+          <div className="chart-head">
+            <h2>Predicted BIS</h2>
+            <button
+              type="button"
+              className={`toggle ${showConcentrations ? "on" : ""}`}
+              onClick={() => setShowConcentrations((v) => !v)}
+            >
+              {showConcentrations ? "Hide concentrations" : "Show concentrations"}
+            </button>
+          </div>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={chartData}>
               <CartesianGrid stroke="#2c3848" strokeDasharray="3 3" />
               <XAxis dataKey="t" stroke="#8b9bb0" tick={{ fontSize: 11 }} />
               <YAxis domain={[0, 100]} stroke="#8b9bb0" tick={{ fontSize: 11 }} />
-              <Tooltip
-                contentStyle={{
-                  background: "#1a222c",
-                  border: "1px solid #2c3848",
-                }}
-              />
+              {!playing && <Tooltip contentStyle={tooltipStyle} />}
               <Line
                 type="monotone"
                 dataKey="BIS"
                 stroke="#3ecf8e"
                 dot={false}
                 strokeWidth={2}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="chart-panel">
-          <h2>Concentrations / tensions</h2>
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={chartData}>
-              <CartesianGrid stroke="#2c3848" strokeDasharray="3 3" />
-              <XAxis dataKey="t" stroke="#8b9bb0" tick={{ fontSize: 11 }} />
-              <YAxis stroke="#8b9bb0" tick={{ fontSize: 11 }} />
-              <Tooltip
-                contentStyle={{
-                  background: "#1a222c",
-                  border: "1px solid #2c3848",
-                }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="Prop Ce"
-                stroke="#3d9cf0"
-                dot={false}
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="Remi Ce"
-                stroke="#c084fc"
-                dot={false}
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="VRG"
-                stroke="#f0b429"
-                dot={false}
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="FA"
-                stroke="#f97316"
-                dot={false}
-                strokeWidth={1.5}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {showConcentrations && (
+          <div className="chart-panel">
+            <h2>Concentrations / tensions</h2>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={chartData}>
+                <CartesianGrid stroke="#2c3848" strokeDasharray="3 3" />
+                <XAxis dataKey="t" stroke="#8b9bb0" tick={{ fontSize: 11 }} />
+                <YAxis stroke="#8b9bb0" tick={{ fontSize: 11 }} />
+                {!playing && <Tooltip contentStyle={tooltipStyle} />}
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="Prop Ce"
+                  stroke="#3d9cf0"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Remi Ce"
+                  stroke="#c084fc"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="VRG"
+                  stroke="#f0b429"
+                  dot={false}
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="FA"
+                  stroke="#f97316"
+                  dot={false}
+                  strokeWidth={1.5}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </main>
     </div>
   );

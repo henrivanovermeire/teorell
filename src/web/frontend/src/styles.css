@@ -177,10 +177,38 @@ button.danger {
   min-height: 280px;
 }
 
+.chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.chart-head h2 {
+  margin: 0;
+}
+
 .chart-panel h2 {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
   font-weight: 600;
+}
+
+button.toggle {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+button.toggle:hover,
+button.toggle.on {
+  border-color: var(--accent);
+  color: var(--text);
 }
 
 .status {
