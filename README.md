@@ -263,7 +263,7 @@ Catalog of PK references to implement (only **bold** rows are coded today):
 ## Acknowledgments
 
 Thank you to **Christopher Connor** for his pioneering work on the
-[Brigham Anesthesia Simulator](https://apps.apple.com/us/app/brigham-anesthesia-simulator/id1406519095)
+[Brigham Anesthesia Simulator](https://bas.bwh.harvard.edu/)
 and pharmacokinetic modelling, and for his contributions to open-source tools
 across the anesthesiology and critical care ecosystem. That body of work was a
 direct inspiration for this project.
