@@ -12,7 +12,7 @@ Priorities favour **teaching fidelity** (published models, clear units, testable
 | Volatile PK | Gas Man–style circuit/alveoli/VRG/muscle/fat; λ/MAC for sevo, iso, des, halo |
 | PD / BIS | Bouillon (TIVA) + Schumacher hypnotic U (propofol ± sevo-eq) + remi-eq opioids |
 | Control | Manual bolus / infusion / vaporizer; live WebSocket UI |
-| Not yet | Effect-site TCI, N₂O / second-gas, NMB or local-anesthetic PD, pediatric covariates |
+| Not yet | Effect-site TCI, N₂O / second-gas, NMB or local-anesthetic PD, pediatric covariates, Docker |
 
 Detailed references live in the README catalog tables.
 
@@ -26,8 +26,9 @@ Make the existing surface trustworthy before adding many new agents.
 - [ ] Unify units and API naming (`amount_mg` vs µg opioids) so new models do not inherit footguns.
 - [ ] Regression fixtures: fixed patient + regimen → golden Ce / FA / BIS traces for Schnider, Minto, Scott, sevoflurane Gas Man.
 - [ ] Optional: Eleveld propofol and/or Marsh as alternate propofol parameterizations (same engine, different `parameters`).
+- [ ] **Docker** one-command live stack (see [Docker integration](#docker-integration) below).
 
-**Exit:** Live UI + `simulate_anesthesia` feel solid for propofol ± remi/alfentanil ± modern volatiles.
+**Exit:** Live UI + `simulate_anesthesia` feel solid for propofol ± remi/alfentanil ± modern volatiles; `docker compose up` runs API + UI.
 
 ---
 
@@ -130,6 +131,7 @@ These unlock many drugs without per-agent UI rewrites.
 
 | Capability | Why |
 |------------|-----|
+| **Docker Compose live stack** | One-command classroom / demo without local Python+Node setup |
 | **Effect-site / plasma TCI** | Target Ce or Cp → computed infusion; needed for realistic fentanyl/propofol teaching |
 | **Pediatric / obese covariates** | Eleveld-style or published pediatric sets; gate behind clear labels |
 | **Multi-agent interaction surfaces** | Beyond β=0 Greco; optional Heyse-style synergy flags |
@@ -137,12 +139,33 @@ These unlock many drugs without per-agent UI rewrites.
 | **Export** | CSV / JSON traces for classroom use |
 | **Model registry** | `DrugSpec` metadata: units, PMID, default ke0, PD endpoint — drives API + UI |
 
+### Docker integration
+
+Goal: `docker compose up` → FastAPI WebSocket API + Vite UI, same teaching workflow as local dev.
+
+| Step | Deliverable |
+|------|-------------|
+| 1 | **API image** — Python ≥3.11, `teorell-core[live]`, `uvicorn apps.api.main:app` on `:8000` |
+| 2 | **Web image** — multi-stage: `npm run build` → nginx (or similar) serving `apps/web/dist`, proxy `/ws` + `/health` to API |
+| 3 | **`compose.yaml`** — `api` + `web` services, published ports (e.g. UI `:5173` or `:80`, API internal) |
+| 4 | **Dev override** — optional `compose.dev.yaml` with volume mounts + hot reload for contributors |
+| 5 | **Docs** — README “Run with Docker”; `.dockerignore` for `node_modules` / `.venv` / `examples/*.png` |
+| 6 | Later | Pre-built GHCR images + CI build on tag; healthcheck on `/health` |
+
+Constraints:
+
+- WebSocket proxy must forward Upgrade headers (nginx `proxy_http_version 1.1` + `Upgrade` / `Connection`).
+- Keep images educational/demo-sized; no persistence required for MVP sessions.
+- Do not bake clinical-use claims into image labels or compose descriptions.
+
+**Exit:** Fresh machine with Docker only can run the live simulator; CI can smoke-test `compose up` + `/health`.
+
 ---
 
 ## Suggested sequencing (summary)
 
 ```text
-Phase 0  Harden dual core + tests + units
+Phase 0  Harden dual core + tests + units + Docker Compose
    ↓
 Phase 1  Volatiles complete (λ/MAC + honest BIS scaling; N₂O optional)
    ↓
@@ -155,7 +178,7 @@ Phase 4  Rocuronium / cisatracurium (NMB core)
 Phase 5  Lidocaine ± other IV LAs
 ```
 
-TCI and the model registry can start as soon as Phase 2 begins; they should not block Phase 1.
+Docker Compose belongs in Phase 0 (demo friction). TCI and the model registry can start as soon as Phase 2 begins; they should not block Phase 1.
 
 ---
 
