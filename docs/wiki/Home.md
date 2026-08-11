@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/henrivanovermeire/teorell/main/assets/teorell.png" alt="teorell" width="480" />
-</p>
+![teorell](https://raw.githubusercontent.com/henrivanovermeire/teorell/main/assets/teorell.png)
 
 # teorell wiki
 
