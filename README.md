@@ -26,14 +26,28 @@ Inspired by educational tools such as the [Brigham Anesthesia Simulator](https:/
 
 Phased plan for further volatiles and drugs: [ROADMAP.md](ROADMAP.md).
 
+## Install (PyPI — core only)
+
+The published package is **`teorell-core`**: the PK/PD library (`teorell_core`). The live web UI is **not** on PyPI; clone this repo for Docker / `./scripts/run-live.sh`.
+
+```bash
+pip install teorell-core
+```
+
+Educational use only — not a medical device and not for clinical dosing.
+
+Release / Trusted Publishing setup: [docs/publishing.md](docs/publishing.md).
+
 ## Quick start
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev,live]"
+pip install -e ".[dev]"       # core + tests
+# optional local live UI deps:
+pip install -e ".[live]"
 pytest
-./scripts/run-live.sh   # API :8000 + UI :5173
+./scripts/run-live.sh         # needs Node; API :8000 + UI :5173
 ```
 
 Open [http://localhost:5173](http://localhost:5173) — edit patient on the landing page → Start simulation.
@@ -169,7 +183,7 @@ BIS = E0 − Emax · U^γ / (1 + U^γ)
 
 ```text
 src/
-  teorell_core/        # PK/PD library
+  teorell_core/        # ← published on PyPI as teorell-core
     patient.py, dosing.py, parameters.py, simulator.py
     pd.py              # Bouillon + Schumacher + CombinedBIS
     tiva.py            # simulate_tiva(...)
@@ -179,7 +193,7 @@ src/
     volatile/
       properties.py    # λ, MAC (sevo, iso, des, halo)
       gasman.py        # simulate_volatile(...)
-  web/                 # live teaching UI stack
+  web/                 # GitHub / Docker only (not on PyPI)
     backend/main.py    # FastAPI WebSocket server
     frontend/          # Vite React UI
 ```
@@ -244,3 +258,5 @@ Catalog of PK references to implement (only **bold** rows are coded today):
 ## License
 
 MIT — see `LICENSE`.
+
+PyPI publishing (Trusted Publishers): [docs/publishing.md](docs/publishing.md).

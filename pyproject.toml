@@ -5,25 +5,53 @@ build-backend = "hatchling.build"
 [project]
 name = "teorell-core"
 version = "0.1.0"
-description = "Pharmacokinetic simulation core for anesthesiology and critical care"
+description = "Educational pharmacokinetic/pharmacodynamic simulation core for anesthesiology (not for clinical use)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
 authors = [
     { name = "Henri Van Overmeire" },
 ]
+keywords = [
+    "pharmacokinetics",
+    "pharmacodynamics",
+    "anesthesia",
+    "propofol",
+    "TIVA",
+    "BIS",
+    "simulation",
+    "education",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Typing :: Typed",
+]
 dependencies = [
     "numpy>=1.26",
 ]
 
+[project.urls]
+Homepage = "https://github.com/henrivanovermeire/teorell"
+Repository = "https://github.com/henrivanovermeire/teorell"
+Issues = "https://github.com/henrivanovermeire/teorell/issues"
+Changelog = "https://github.com/henrivanovermeire/teorell/releases"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "build>=1.2",
+    "twine>=5.0",
 ]
-app = [
-    "streamlit>=1.32",
-    "pandas>=2.0",
-]
+# FastAPI/uvicorn for custom servers around LiveSession.
+# The Vite UI lives in the GitHub repo (src/web/), not in this PyPI wheel.
 live = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
@@ -38,6 +66,7 @@ include = [
     "tests",
     "README.md",
     "LICENSE",
+    "pyproject.toml",
 ]
 
 [tool.pytest.ini_options]
