@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/henrivanovermeire/teorell/main/assets/teorell.png" alt="teorell" width="480" />
+</p>
+
 # teorell wiki
 
 **Educational** pharmacokinetic / pharmacodynamic simulation for anesthesiology and critical care. Inspired by tools such as the Brigham Anesthesia Simulator — **not a medical device** and **not for clinical dosing**.

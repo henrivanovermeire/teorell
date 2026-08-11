@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/henrivanovermeire/teorell/main/assets/teorell.png" alt="teorell" width="360" />
+</p>
+
 # Architecture
 
 teorell separates a **pure simulation library** from an optional **live teaching stack**. The library is what ships on PyPI as `teorell-core`; the UI is application code in this repository.
