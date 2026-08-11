@@ -4,7 +4,11 @@
 
 FOSS core for pharmacokinetic modelling in anesthesiology & critical care.
 
-Inspired by educational tools such as the [Brigham Anesthesia Simulator](https://apps.apple.com/us/app/brigham-anesthesia-simulator/id1406519095) (BAS): multi-drug IV PK, opioid equipotency, and a Bouillon-style predicted processed-EEG (BIS) surface.
+Independent educational project: multi-drug IV PK, opioid equipotency, volatile
+Gas Man–style uptake, and Bouillon/Schumacher-style predicted processed-EEG
+(BIS) surfaces. **Not affiliated with** Brigham and Women’s Hospital or any
+commercial anesthesia simulator. **Not a medical device** — not for clinical
+dosing or patient care.
 
 ## Status
 
@@ -70,7 +74,7 @@ tiva = simulate_tiva(
     duration_min=30.0,
 )
 
-# Volatile ± IV (BAS dual-core)
+# Volatile ± IV (dual-core)
 anes = simulate_anesthesia(
     patient,
     propofol=Regimen(boluses=(Bolus(0.0, 80.0),)),
@@ -136,7 +140,8 @@ python examples/sevoflurane_gasman_bis.py
 
 ## How predicted BIS is computed
 
-Matches the BAS educational architecture (Connor & Philip, STA 2019): **IV core** + **volatile core** → equipotency → response surfaces.
+Educational dual-core layout: **IV core** + **volatile core** → equipotency →
+published response surfaces (Bouillon; Schumacher hypnotic U).
 
 ### TIVA-only (`simulate_tiva`)
 

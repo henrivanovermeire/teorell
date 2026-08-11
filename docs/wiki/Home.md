@@ -2,7 +2,7 @@
 
 # teorell wiki
 
-**Educational** pharmacokinetic / pharmacodynamic simulation for anesthesiology and critical care. Inspired by tools such as the Brigham Anesthesia Simulator — **not a medical device** and **not for clinical dosing**.
+**Educational** pharmacokinetic / pharmacodynamic simulation for anesthesiology and critical care. Independent FOSS project — **not affiliated with** Brigham and Women’s Hospital or commercial simulators; **not a medical device** and **not for clinical dosing**.
 
 ## Contents
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-Educational PK/PD evolution for **teorell**: grow the dual-core simulator (IV + volatiles → predicted BIS) toward a BAS-class drug library without pretending to be a clinical decision-support system.
+Educational PK/PD evolution for **teorell**: grow the dual-core simulator (IV + volatiles → predicted BIS) toward a broader educational drug library without pretending to be a clinical decision-support system.
 
 Priorities favour **teaching fidelity** (published models, clear units, testable equipotency) over breadth for its own sake.
 
@@ -56,7 +56,7 @@ Also:
 
 ## Phase 2 — Opioid spine (fentanyl family)
 
-Closest educational gap vs BAS / OR practice after remi + alfentanil.
+Closest educational gap vs common OR practice after remi + alfentanil.
 
 | Priority | Drug | Model target | Equipotency / PD notes |
 |----------|------|--------------|-------------------------|
@@ -135,7 +135,7 @@ These unlock many drugs without per-agent UI rewrites.
 | **Effect-site / plasma TCI** | Target Ce or Cp → computed infusion; needed for realistic fentanyl/propofol teaching |
 | **Pediatric / obese covariates** | Eleveld-style or published pediatric sets; gate behind clear labels |
 | **Multi-agent interaction surfaces** | Beyond β=0 Greco; optional Heyse-style synergy flags |
-| **Scenario / regimen presets** | BAS-like induction–maintenance–emergence scripts |
+| **Scenario / regimen presets** | Induction–maintenance–emergence teaching scripts |
 | **Export** | CSV / JSON traces for classroom use |
 | **Model registry** | `DrugSpec` metadata: units, PMID, default ke0, PD endpoint — drives API + UI |
 

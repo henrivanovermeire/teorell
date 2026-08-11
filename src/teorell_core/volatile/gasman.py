@@ -1,8 +1,7 @@
 """Gas Man–style uptake and distribution for a single volatile agent.
 
 Educational four-tissue body (VRG / muscle / fat) plus circuit and alveolar
-gas, after the classic Eger / Philip Gas Man structure used by Brigham
-Anesthesia Simulator for its volatile core.
+gas, after the classic Eger / Philip Gas Man teaching structure.
 """
 
 from __future__ import annotations

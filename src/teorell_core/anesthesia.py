@@ -1,4 +1,4 @@
-"""Combined IV + volatile anesthesia simulation (BAS-style dual core)."""
+"""Combined IV + volatile anesthesia simulation (educational dual core)."""
 
 from __future__ import annotations
 

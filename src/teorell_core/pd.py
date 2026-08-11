@@ -7,13 +7,13 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-# BAS-style equipotency: convert opioid Ce to remifentanil-equivalent ng/mL
-# for the Bouillon BIS surface (Connor / Brigham Anesthesia Simulator).
+# Equipotency: convert opioid Ce to remifentanil-equivalent ng/mL for the
+# Bouillon BIS surface.
 #
 # Egan et al., Anesthesiology 1999;90:1260- (ventilatory depression): remifentanil
 # is ~40× as potent as alfentanil when both are compared as whole-blood
 # concentrations. (Plasma alfentanil vs whole-blood remifentanil is closer to
-# ~70×; we use 40:1 as the common educational/simulator whole-blood ratio.)
+# ~70×; we use 40:1 as a common educational whole-blood ratio.)
 ALFENTANIL_TO_REMI_EQUIVALENT = 40.0
 
 
@@ -53,8 +53,8 @@ def _as_matching_arrays(
 class BouillonBIS:
     """Propofol ± opioid → predicted BIS (Bouillon et al. 2004).
 
-    Uses the Minto-type interaction surface as in Brigham Anesthesia Simulator
-    (equipotent opioids → remifentanil units, then Bouillon response surface):
+    Uses a Minto-type interaction surface with opioids expressed as
+    remifentanil-equivalent concentrations, then the Bouillon response surface:
 
         U_p = Ce_propofol / C50_p
         U_r = Ce_opioid_remi_eq / C50_r
@@ -118,7 +118,7 @@ class SchumacherHypnotic:
 
 @dataclass(frozen=True, slots=True)
 class CombinedBIS:
-    """BAS-style combined BIS: Schumacher hypnotic U + Bouillon opioid arm.
+    """Combined hypnotic + opioid BIS: Schumacher hypnotic U + Bouillon opioid arm.
 
     When any volatile is present, propofol potency uses Schumacher C50 (3.68).
     Opioids enter as remifentanil-equivalent via the Bouillon Minto surface

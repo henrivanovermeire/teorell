@@ -1,8 +1,8 @@
 """Combined TIVA simulation with predicted processed-EEG (BIS).
 
-Approximates the Brigham Anesthesia Simulator IV core: Schnider propofol +
-opioid PK (Minto remifentanil, Scott alfentanil), equipotency conversion, then
-Bouillon response-surface PD → predicted BIS.
+Educational IV path: Schnider propofol + opioid PK (Minto remifentanil,
+Scott alfentanil), equipotency conversion, then Bouillon response-surface
+PD → predicted BIS. Not for clinical use.
 """
 
 from __future__ import annotations
@@ -58,7 +58,7 @@ def simulate_tiva(
     Propofol regimen amounts/rates are in mg / mg/min (concentrations µg/mL).
     Remifentanil and alfentanil amounts/rates are in µg / µg/min (ng/mL).
     Alfentanil is converted to remifentanil-equivalent Ce (÷40) for the Bouillon
-    surface, matching BAS equipotency → response-surface PD.
+    surface (equipotency → response-surface PD).
     """
     if propofol is None and remifentanil is None and alfentanil is None:
         raise ValueError("provide at least one drug regimen")
