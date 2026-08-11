@@ -12,6 +12,9 @@ import {
 import { connectLive, type LiveClient, type Snapshot } from "./live";
 
 const MAX_POINTS = 600;
+/** Chart redraw rate; metric tiles still update every WS tick. */
+const CHART_HZ = 4;
+const CHART_MIN_MS = 1000 / CHART_HZ;
 
 const emptySnap: Snapshot = {
   t_min: 0,
@@ -34,6 +37,8 @@ const emptySnap: Snapshot = {
 
 export default function App() {
   const client = useRef<LiveClient | null>(null);
+  const lastChartAt = useRef(0);
+  const latestSnap = useRef<Snapshot>(emptySnap);
   const [connected, setConnected] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [snap, setSnap] = useState<Snapshot>(emptySnap);
@@ -50,13 +55,26 @@ export default function App() {
   const [fgf, setFgf] = useState(6);
   const [status, setStatus] = useState("disconnected");
 
-  const pushSnap = useCallback((s: Snapshot) => {
-    setSnap(s);
+  const appendChart = useCallback((s: Snapshot) => {
+    lastChartAt.current = performance.now();
     setHistory((h) => {
       const next = [...h, s];
       return next.length > MAX_POINTS ? next.slice(next.length - MAX_POINTS) : next;
     });
   }, []);
+
+  /** Metrics every tick; charts throttled unless force (bolus / reset / …). */
+  const onSnapshot = useCallback(
+    (s: Snapshot, forceChart = false) => {
+      latestSnap.current = s;
+      setSnap(s);
+      const now = performance.now();
+      if (forceChart || now - lastChartAt.current >= CHART_MIN_MS) {
+        appendChart(s);
+      }
+    },
+    [appendChart],
+  );
 
   useEffect(() => {
     const c = connectLive(
@@ -64,6 +82,8 @@ export default function App() {
         if (msg.type === "hello") setStatus("connected");
         if (msg.type === "started") {
           setPlaying(false);
+          lastChartAt.current = 0;
+          latestSnap.current = msg.snapshot;
           setHistory([msg.snapshot]);
           setSnap(msg.snapshot);
           setSpeed(msg.speed);
@@ -76,16 +96,19 @@ export default function App() {
         if (msg.type === "paused") {
           setPlaying(false);
           setStatus("paused");
+          appendChart(latestSnap.current);
         }
         if (msg.type === "speed") setSpeed(msg.speed);
+        if (msg.type === "tick") {
+          onSnapshot(msg.snapshot, false);
+        }
         if (
-          msg.type === "tick" ||
           msg.type === "bolus" ||
           msg.type === "infusion" ||
           msg.type === "vaporizer" ||
           msg.type === "reset"
         ) {
-          pushSnap(msg.snapshot);
+          onSnapshot(msg.snapshot, true);
         }
         if (msg.type === "error") setStatus(msg.message);
       },
@@ -96,7 +119,7 @@ export default function App() {
     );
     client.current = c;
     return () => c.close();
-  }, [pushSnap]);
+  }, [onSnapshot, appendChart]);
 
   const send = useCallback((msg: Record<string, unknown>) => {
     client.current?.send(msg);
