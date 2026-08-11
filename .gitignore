@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Example plot outputs
+examples/*.png
+
+# Node / Vite
+node_modules/
+apps/web/dist/

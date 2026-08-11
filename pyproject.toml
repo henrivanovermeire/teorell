@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "teorell-core"
+version = "0.1.0"
+description = "Pharmacokinetic simulation core for anesthesiology and critical care"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Henri Van Overmeire" },
+]
+dependencies = [
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+app = [
+    "streamlit>=1.32",
+    "pandas>=2.0",
+]
+live = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/teorell_core"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/teorell_core",
+    "tests",
+    "README.md",
+    "LICENSE",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
