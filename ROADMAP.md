@@ -12,7 +12,7 @@ Priorities favour **teaching fidelity** (published models, clear units, testable
 | Volatile PK | Gas Man–style circuit/alveoli/VRG/muscle/fat; λ/MAC for sevo, iso, des, halo |
 | PD / BIS | Bouillon (TIVA) + Schumacher hypnotic U (propofol ± sevo-eq) + remi-eq opioids |
 | Control | Manual bolus / infusion / vaporizer; live WebSocket UI |
-| Not yet | Effect-site TCI, N₂O / second-gas, NMB or local-anesthetic PD, pediatric covariates, Docker |
+| Not yet | Effect-site TCI, N₂O / second-gas, NMB or local-anesthetic PD, pediatric covariates |
 
 Detailed references live in the README catalog tables.
 
@@ -26,7 +26,7 @@ Make the existing surface trustworthy before adding many new agents.
 - [ ] Unify units and API naming (`amount_mg` vs µg opioids) so new models do not inherit footguns.
 - [ ] Regression fixtures: fixed patient + regimen → golden Ce / FA / BIS traces for Schnider, Minto, Scott, sevoflurane Gas Man.
 - [ ] Optional: Eleveld propofol and/or Marsh as alternate propofol parameterizations (same engine, different `parameters`).
-- [ ] **Docker** one-command live stack (see [Docker integration](#docker-integration) below).
+- [x] **Docker** one-command live stack (see [Docker integration](#docker-integration) below).
 
 **Exit:** Live UI + `simulate_anesthesia` feel solid for propofol ± remi/alfentanil ± modern volatiles; `docker compose up` runs API + UI.
 
@@ -145,12 +145,12 @@ Goal: `docker compose up` → FastAPI WebSocket API + Vite UI, same teaching wor
 
 | Step | Deliverable |
 |------|-------------|
-| 1 | **API image** — Python ≥3.11, `teorell-core[live]`, `uvicorn web.backend.main:app` on `:8000` |
-| 2 | **Web image** — multi-stage: `npm run build` → nginx (or similar) serving `src/web/frontend/dist`, proxy `/ws` + `/health` to API |
-| 3 | **`compose.yaml`** — `api` + `web` services, published ports (e.g. UI `:5173` or `:80`, API internal) |
+| 1 | **API image** — `docker/Dockerfile.backend` (`uvicorn web.backend.main:app` on `:8000`) |
+| 2 | **Web image** — `docker/Dockerfile.frontend` (Vite build → nginx + `/ws` proxy) |
+| 3 | **`compose.yaml`** — `backend` + `frontend` (`:8080` UI, `:8000` API) |
 | 4 | **Dev override** — optional `compose.dev.yaml` with volume mounts + hot reload for contributors |
-| 5 | **Docs** — README “Run with Docker”; `.dockerignore` for `node_modules` / `.venv` / `examples/*.png` |
-| 6 | Later | Pre-built GHCR images + CI build on tag; healthcheck on `/health` |
+| 5 | **Docs** — README “Docker Compose”; `.dockerignore` |
+| 6 | Later | Pre-built GHCR images + CI build on tag |
 
 Constraints:
 

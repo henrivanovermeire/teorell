@@ -17,6 +17,7 @@ Inspired by educational tools such as the [Brigham Anesthesia Simulator](https:/
 | Opioid equipotency | Alfentanil → remi | ÷40 (Egan 1999 whole-blood ratio) |
 | Effect-site TCI | No | Manual bolus/infusion / vaporizer schedules only |
 | Live WebSocket UI | Yes | `LiveSession` + FastAPI `/ws` + Vite React (`src/web/`) |
+| Docker Compose | Yes | `docker compose up --build` → UI `:8080`, API `:8000` |
 | NMB / local anesthetics | No | Catalogued below; not simulated yet |
 
 Phased plan for further volatiles and drugs: [ROADMAP.md](ROADMAP.md).
@@ -31,7 +32,7 @@ pytest
 ./scripts/run-live.sh   # API :8000 + UI :5173
 ```
 
-Open http://localhost:5173 — Start session → Play → bolus buttons.
+Open http://localhost:5173 — edit patient on the landing page → Start simulation.
 
 ```python
 from teorell_core import (
@@ -59,6 +60,15 @@ anes = simulate_anesthesia(
 )
 print(anes.bis.min(), anes.mac_fraction.max(), anes.vrg_vol_pct[-1])
 ```
+
+### Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:8080 (API health: http://localhost:8000/health).  
+Backend image embeds `teorell_core`; frontend is a static Vite build behind nginx with `/ws` proxy. See `docker/` and `compose.yaml`.
 
 ### Live app (FastAPI WebSocket + Vite React)
 
