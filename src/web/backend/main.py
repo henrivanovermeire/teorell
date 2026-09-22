@@ -26,6 +26,8 @@ AGENTS = {
     "halothane": HALOTHANE,
 }
 
+LIVE_SIM_MIN_PER_WALL_S = 1.0 / 60.0
+
 app = FastAPI(title="teorell-live", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
@@ -57,8 +59,10 @@ async def live_ws(ws: WebSocket) -> None:
     await ws.accept()
     session: LiveSession | None = None
     playing = False
-    # Teaching default: 1 wall-second → 1 sim-minute
-    sim_min_per_wall_s = 1.0
+    # Live playback: 1 wall-second → 1 simulation-second.
+    sim_min_per_wall_s = LIVE_SIM_MIN_PER_WALL_S
+    prediction_window_min = 60.0
+    prediction_step_min = 0.5
     wall_tick_s = 0.1
     tick_task: asyncio.Task[None] | None = None
     # Serialize mutations: ticker to_thread vs bolus/reset on the same session.
@@ -67,8 +71,31 @@ async def live_ws(ws: WebSocket) -> None:
     async def send(payload: dict[str, Any]) -> None:
         await ws.send_text(json.dumps(payload))
 
-    async def emit_tick(snap_dict: dict[str, float], *, event: str = "tick") -> None:
-        await send({"type": event, "snapshot": snap_dict})
+    def prediction_for(current: LiveSession) -> list[dict[str, float]]:
+        window = max(prediction_window_min, 0.0)
+        if window <= 0:
+            return []
+        step = max(min(prediction_step_min, window), 0.1)
+        forecast = current.copy(history_limit=0)
+        points = [forecast.snapshot().as_dict()]
+        elapsed = 0.0
+        while elapsed < window:
+            dt = min(step, window - elapsed)
+            points.append(forecast.step(dt).as_dict())
+            elapsed += dt
+        return points
+
+    async def emit_tick(
+        snap_dict: dict[str, float],
+        *,
+        event: str = "tick",
+        prediction: list[dict[str, float]] | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {"type": event, "snapshot": snap_dict}
+        if prediction is not None:
+            payload["prediction"] = prediction
+            payload["prediction_window_min"] = prediction_window_min
+        await send(payload)
 
     async def ticker() -> None:
         nonlocal playing
@@ -76,14 +103,16 @@ async def live_ws(ws: WebSocket) -> None:
             while True:
                 await asyncio.sleep(wall_tick_s)
                 snap_dict: dict[str, float] | None = None
+                prediction: list[dict[str, float]] | None = None
                 async with session_lock:
                     if not playing or session is None:
                         continue
                     dt = sim_min_per_wall_s * wall_tick_s
                     snap = await asyncio.to_thread(session.step, dt)
                     snap_dict = snap.as_dict()
+                    prediction = await asyncio.to_thread(prediction_for, session)
                 if snap_dict is not None:
-                    await emit_tick(snap_dict)
+                    await emit_tick(snap_dict, prediction=prediction)
         except asyncio.CancelledError:
             return
 
@@ -108,9 +137,13 @@ async def live_ws(ws: WebSocket) -> None:
                 agent = AGENTS.get(str(msg.get("agent", "sevoflurane")).lower(), SEVOFLURANE)
                 patient = _patient_from(msg)
                 volatile_enabled = bool(msg.get("volatile_enabled", True))
-                speed = float(msg.get("speed", 1.0))
+                speed = float(msg.get("speed", LIVE_SIM_MIN_PER_WALL_S))
                 if speed <= 0:
-                    speed = 1.0
+                    speed = LIVE_SIM_MIN_PER_WALL_S
+                prediction_window_min = min(
+                    max(float(msg.get("prediction_window_min", prediction_window_min)), 0.0),
+                    60.0,
+                )
 
                 def _new_session() -> LiveSession:
                     s = LiveSession(patient=patient, volatile_agent=agent)
@@ -120,12 +153,15 @@ async def live_ws(ws: WebSocket) -> None:
                 async with session_lock:
                     session = await asyncio.to_thread(_new_session)
                     snap = await asyncio.to_thread(session.snapshot)
+                    prediction = await asyncio.to_thread(prediction_for, session)
                 sim_min_per_wall_s = speed
                 ensure_ticker()
                 await send(
                     {
                         "type": "started",
                         "snapshot": snap.as_dict(),
+                        "prediction": prediction,
+                        "prediction_window_min": prediction_window_min,
                         "speed": sim_min_per_wall_s,
                     }
                 )
@@ -143,8 +179,37 @@ async def live_ws(ws: WebSocket) -> None:
                 await send({"type": "paused"})
 
             elif mtype == "set_speed":
-                sim_min_per_wall_s = max(float(msg.get("speed", 1.0)), 0.01)
+                sim_min_per_wall_s = max(
+                    float(msg.get("speed", LIVE_SIM_MIN_PER_WALL_S)),
+                    LIVE_SIM_MIN_PER_WALL_S,
+                )
                 await send({"type": "speed", "speed": sim_min_per_wall_s})
+
+            elif mtype == "set_prediction_window":
+                prediction_window_min = min(
+                    max(float(msg.get("minutes", prediction_window_min)), 0.0),
+                    60.0,
+                )
+                if session is None:
+                    await send(
+                        {
+                            "type": "prediction_window",
+                            "prediction_window_min": prediction_window_min,
+                            "prediction": [],
+                        }
+                    )
+                    continue
+                async with session_lock:
+                    snap = await asyncio.to_thread(session.snapshot)
+                    prediction = await asyncio.to_thread(prediction_for, session)
+                await send(
+                    {
+                        "type": "prediction_window",
+                        "snapshot": snap.as_dict(),
+                        "prediction": prediction,
+                        "prediction_window_min": prediction_window_min,
+                    }
+                )
 
             elif mtype == "bolus":
                 if session is None:
@@ -162,7 +227,8 @@ async def live_ws(ws: WebSocket) -> None:
                     else:
                         await send({"type": "error", "message": f"unknown drug {drug}"})
                         continue
-                await emit_tick(snap.as_dict(), event="bolus")
+                    prediction = await asyncio.to_thread(prediction_for, session)
+                await emit_tick(snap.as_dict(), event="bolus", prediction=prediction)
 
             elif mtype == "set_infusion":
                 if session is None:
@@ -181,7 +247,8 @@ async def live_ws(ws: WebSocket) -> None:
                         await send({"type": "error", "message": f"unknown drug {drug}"})
                         continue
                     snap = await asyncio.to_thread(session.snapshot)
-                await emit_tick(snap.as_dict(), event="infusion")
+                    prediction = await asyncio.to_thread(prediction_for, session)
+                await emit_tick(snap.as_dict(), event="infusion", prediction=prediction)
 
             elif mtype == "set_vaporizer":
                 if session is None:
@@ -192,7 +259,8 @@ async def live_ws(ws: WebSocket) -> None:
                 async with session_lock:
                     session.set_vaporizer(vol, float(fgf) if fgf is not None else None)
                     snap = await asyncio.to_thread(session.snapshot)
-                await emit_tick(snap.as_dict(), event="vaporizer")
+                    prediction = await asyncio.to_thread(prediction_for, session)
+                await emit_tick(snap.as_dict(), event="vaporizer", prediction=prediction)
 
             elif mtype == "reset":
                 if session is None:
@@ -201,7 +269,8 @@ async def live_ws(ws: WebSocket) -> None:
                 playing = False
                 async with session_lock:
                     snap = await asyncio.to_thread(session.reset)
-                await emit_tick(snap.as_dict(), event="reset")
+                    prediction = await asyncio.to_thread(prediction_for, session)
+                await emit_tick(snap.as_dict(), event="reset", prediction=prediction)
 
             elif mtype == "history":
                 if session is None:

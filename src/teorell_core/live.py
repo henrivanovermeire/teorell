@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import copy
 
 import numpy as np
 
@@ -141,6 +142,17 @@ class LiveSession:
             fgf=self.fgf,
         )
 
+    def copy(self, *, history_limit: int | None = None) -> LiveSession:
+        """Return an independent copy suitable for non-mutating forecasts."""
+        clone = copy.deepcopy(self)
+        if history_limit is not None:
+            clone.history_limit = history_limit
+            if history_limit <= 0:
+                clone.history = []
+            elif len(clone.history) > history_limit:
+                clone.history = clone.history[-history_limit:]
+        return clone
+
     def step(self, dt_min: float) -> LiveSnapshot:
         if dt_min < 0:
             raise ValueError("dt_min must be non-negative")
@@ -233,10 +245,10 @@ class LiveSession:
         if not self.volatile_enabled or vrg <= 0:
             return 0.0
         agent = self.volatile_agent
-        if agent.c50_bis_vol_pct is not None:
-            return vrg * (
-                float(SEVOFLURANE.c50_bis_vol_pct) / float(agent.c50_bis_vol_pct)
-            )
+        sevo_c50 = SEVOFLURANE.c50_bis_vol_pct
+        agent_c50 = agent.c50_bis_vol_pct
+        if sevo_c50 is not None and agent_c50 is not None:
+            return vrg * (float(sevo_c50) / float(agent_c50))
         return vrg * (SEVOFLURANE.mac_vol_pct / agent.mac_vol_pct)
 
     def _record(self) -> None:

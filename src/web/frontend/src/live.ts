@@ -19,11 +19,28 @@ export type Snapshot = {
 
 export type ServerMessage =
   | { type: "hello"; message: string }
-  | { type: "started"; snapshot: Snapshot; speed: number }
+  | {
+      type: "started";
+      snapshot: Snapshot;
+      prediction?: Snapshot[];
+      prediction_window_min?: number;
+      speed: number;
+    }
   | { type: "playing" }
   | { type: "paused" }
   | { type: "speed"; speed: number }
-  | { type: "tick" | "bolus" | "infusion" | "vaporizer" | "reset"; snapshot: Snapshot }
+  | {
+      type: "prediction_window";
+      snapshot?: Snapshot;
+      prediction: Snapshot[];
+      prediction_window_min: number;
+    }
+  | {
+      type: "tick" | "bolus" | "infusion" | "vaporizer" | "reset";
+      snapshot: Snapshot;
+      prediction?: Snapshot[];
+      prediction_window_min?: number;
+    }
   | { type: "history"; points: Snapshot[] }
   | { type: "error"; message: string };
 
