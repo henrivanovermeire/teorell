@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any
+import uuid
+from dataclasses import dataclass
+from typing import Any, Awaitable, Callable
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 
 from teorell_core import (
@@ -28,6 +31,20 @@ AGENTS = {
 
 LIVE_SIM_MIN_PER_WALL_S = 1.0 / 60.0
 
+
+class PropofolBolusRequest(BaseModel):
+    amount_mg: float = Field(gt=0)
+
+
+@dataclass
+class ActiveLiveSession:
+    session_id: str
+    bolus_propofol: Callable[[float], Awaitable[dict[str, Any]]]
+
+
+_active_sessions: dict[str, ActiveLiveSession] = {}
+_active_sessions_lock = asyncio.Lock()
+
 app = FastAPI(title="teorell-live", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +58,18 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/bolus/propofol")
+async def http_bolus_propofol(req: PropofolBolusRequest) -> dict[str, Any]:
+    async with _active_sessions_lock:
+        active = list(_active_sessions.values())
+    if not active:
+        raise HTTPException(status_code=404, detail="no active live session")
+
+    control = active[-1]
+    result = await control.bolus_propofol(req.amount_mg)
+    return {"session_id": control.session_id, **result}
 
 
 def _patient_from(msg: dict[str, Any]) -> Patient:
@@ -57,6 +86,7 @@ def _patient_from(msg: dict[str, Any]) -> Patient:
 @app.websocket("/ws")
 async def live_ws(ws: WebSocket) -> None:
     await ws.accept()
+    session_id = uuid.uuid4().hex
     session: LiveSession | None = None
     playing = False
     # Live playback: 1 wall-second → 1 simulation-second.
@@ -97,6 +127,22 @@ async def live_ws(ws: WebSocket) -> None:
             payload["prediction_window_min"] = prediction_window_min
         await send(payload)
 
+    async def external_propofol_bolus(amount_mg: float) -> dict[str, Any]:
+        if session is None:
+            raise HTTPException(status_code=409, detail="live session has not been started")
+        async with session_lock:
+            snap = await asyncio.to_thread(session.bolus_propofol, amount_mg)
+            prediction = await asyncio.to_thread(prediction_for, session)
+        snap_dict = snap.as_dict()
+        await emit_tick(snap_dict, event="bolus", prediction=prediction)
+        return {
+            "type": "bolus",
+            "drug": "propofol",
+            "amount_mg": amount_mg,
+            "snapshot": snap_dict,
+            "prediction_window_min": prediction_window_min,
+        }
+
     async def ticker() -> None:
         nonlocal playing
         try:
@@ -121,8 +167,14 @@ async def live_ws(ws: WebSocket) -> None:
         if tick_task is None or tick_task.done():
             tick_task = asyncio.create_task(ticker())
 
+    async with _active_sessions_lock:
+        _active_sessions[session_id] = ActiveLiveSession(
+            session_id=session_id,
+            bolus_propofol=external_propofol_bolus,
+        )
+
     try:
-        await send({"type": "hello", "message": "teorell live"})
+        await send({"type": "hello", "message": "teorell live", "session_id": session_id})
         while True:
             raw = await ws.receive_text()
             try:
@@ -287,6 +339,8 @@ async def live_ws(ws: WebSocket) -> None:
         pass
     finally:
         playing = False
+        async with _active_sessions_lock:
+            _active_sessions.pop(session_id, None)
         if tick_task is not None:
             tick_task.cancel()
             try:
